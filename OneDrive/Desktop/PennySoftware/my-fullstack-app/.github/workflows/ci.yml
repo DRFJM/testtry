@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main  # Change this to 'master' if you use 'master' as your main branch
+  pull_request:
+    branches:
+      - main  # Change this to 'master' if you use 'master' as your main branch
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      # Connect your workspace on nx.app and uncomment this to enable task distribution.
+      # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "build" targets have been requested
+      # - run: npx nx-cloud start-ci-run --distribute-on="5 linux-medium-js" --stop-agents-after="build"
+
+      # Set up Node.js and cache node_modules
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+       
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set SHAs for Nx Cloud
+        uses: nrwl/nx-set-shas@v4
+
+      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
+      # - run: npx nx-cloud record -- echo Hello World
+      
+      - name: Run Nx affected commands
+        run: npx nx affected --target=lint --target=test --target=build
